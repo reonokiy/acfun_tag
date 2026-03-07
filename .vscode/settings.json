@@ -1,0 +1,11 @@
+{
+    "workbench.editorAssociations": {
+        "*.copilotmd": "vscode.markdown.preview.editor",
+        "{hexdiff}:/**/*.*": "hexEditor.hexedit",
+        "file:/**/*.parquet": "jupyter-data-wrangler",
+        "*.parquet": "duckdb.dataFileViewer",
+        "*.csv": "duckdb.dataFileViewer",
+        "*.tsv": "duckdb.dataFileViewer"
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+}
