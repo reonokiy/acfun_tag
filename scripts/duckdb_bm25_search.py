@@ -8,6 +8,7 @@ from pathlib import Path
 
 import duckdb
 import jieba
+import pandas as pd
 import pyarrow as pa
 import pyarrow.dataset as ds
 from janome.tokenizer import Tokenizer as JanomeTokenizer
@@ -142,6 +143,12 @@ def parse_args() -> argparse.Namespace:
     query.add_argument("--channel-weight", type=float, default=2.0, help="Weight for channel partition score")
     query.add_argument("--json", action="store_true", help="Print JSON instead of a text table")
     query.add_argument("--show-description-chars", type=int, default=120, help="Description preview length")
+    query.add_argument("--output-parquet", type=Path, default=None, help="Optional parquet path for query results")
+    query.add_argument(
+        "--include-info-columns",
+        action="store_true",
+        help="Include title/description/tags/channel info columns in the output parquet",
+    )
 
     parser.add_argument(
         "--log-level",
@@ -398,6 +405,36 @@ def run_query(args: argparse.Namespace) -> None:
         args.top_k,
     ]
     rows = con.execute(sql, params).fetchall()
+
+    if args.output_parquet is not None:
+        args.output_parquet.parent.mkdir(parents=True, exist_ok=True)
+        records: list[dict[str, object]] = []
+        for index, row in enumerate(rows, start=1):
+            record: dict[str, object] = {
+                "rank": index,
+                "id": row[0],
+                "query_text": query_text,
+                "query_terms": terms,
+                "total_score": float(row[11]),
+                "title_score": None if row[6] is None else float(row[6]),
+                "description_score": None if row[7] is None else float(row[7]),
+                "tags_score": None if row[8] is None else float(row[8]),
+                "parent_score": None if row[9] is None else float(row[9]),
+                "channel_score": None if row[10] is None else float(row[10]),
+            }
+            if args.include_info_columns:
+                record.update(
+                    {
+                        "title": row[1],
+                        "description": row[2],
+                        "tags": row[3],
+                        "parent_channel": row[4],
+                        "channel": row[5],
+                    }
+                )
+            records.append(record)
+        pd.DataFrame.from_records(records).to_parquet(args.output_parquet, index=False)
+        logging.info("wrote query parquet to %s rows=%s", args.output_parquet, len(records))
 
     if args.json:
         payload = []

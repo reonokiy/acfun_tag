@@ -10,6 +10,7 @@ train-word2vec = "python scripts/train_word2vec.py"
 build-bm25 = "python scripts/duckdb_bm25_search.py build"
 query-bm25 = "python scripts/duckdb_bm25_search.py query"
 query-word2vec = "python scripts/query_word2vec_terms.py"
+export-word2vec-neo4j = "python scripts/export_word2vec_neo4j.py"
 
 [dependencies]
 numpy = ">=2.4.2,<3"
